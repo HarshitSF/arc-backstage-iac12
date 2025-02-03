@@ -1,0 +1,156 @@
+# # Define the name of the GitHub Action workflow
+# name: Create an ec2 instance
+# # This workflow is manually triggered using the GitHub Actions UI
+# on:
+#   workflow_dispatch:
+#     # Define inputs that are required for the manual trigger
+#     inputs:
+#       awsRegion:
+#         description: 'AWS Region for the instance'
+#         required: true
+#       projectName:
+#         description: 'Provide Project Name'
+#         required: true
+#       environment:
+#         description: 'Provide Environment Name'
+#         required: true
+#       cidrBlock:
+#         description: 'Provide VPC CIDR Block'
+#         required: true
+#       # kubernetesVersion:
+#       #   description: 'Provide EKS Kubernetes Version'
+#       #   required: true
+#       # desiredSize:
+#       #   description: 'Provide EKS Node Group Desired Size'
+#       #   required: true
+#       # minSize:
+#       #   description: 'Provide EKS Node Group Minimum Size'
+#       #   required: true
+#       # maxSize:
+#       #   description: 'Provide EKS Node Group Maximum Size'
+#       #   required: true
+#       # CapacityType:
+#       #   description: 'Provide EKS Nodes Capacity Type. It can be SPOT or ON_DEMAND'
+#       #   required: true
+#       # instanceType:
+#       #   description: 'Provide EKS Node Group instance types'
+#       #   required: true
+#       # action:
+#       #   description: 'Action to perform (apply/destroy)'
+#       #   required: true
+# # Jobs to be executed in this workflow
+# jobs:
+#   # Job for applying the ec2 instance
+#   apply_network:
+#     # Use the latest Ubuntu runner
+#     runs-on: ubuntu-latest
+    
+#     # Execute this step only if the action input is "apply"
+#     if: false
+#     # Define the steps for this job
+#     steps:
+    
+#     # checkout the code from the repository
+#     - name: Checkout code
+#       uses: actions/checkout@v2
+
+#     - name: Make Executable tfenv
+#       run: chmod +x ./scripts/dependencies/install-tfenv.sh
+#       continue-on-error: false
+
+#     - name: Install tfenv
+#       run: ./scripts/dependencies/install-tfenv.sh
+#       continue-on-error: false
+
+#     - name: Make Executable AWS CLI
+#       run: chmod +x ./scripts/dependencies/install-aws-cli.sh
+#       continue-on-error: false
+      
+#     - name: Install AWS CLI
+#       run: ./scripts/dependencies/install-aws-cli.sh
+#       continue-on-error: false
+
+# # adding aws keys. Please store the value of these key in GitHub variables
+#     - name: Configure credentials for 
+#         uses: aws-actions/configure-aws-credentials@v2
+#         with:
+#           role-to-assume: "arn:aws:iam::471112653618:role/github-action"
+#           aws-region: 
+#           role-session-name: github-actions-cd
+    
+#     # Initialize Terraform 
+#     - name: Terraform Init
+#       run: terraform init --backend-config=config.hcl
+#       working-directory: network  # Where should this command be run?
+      
+#     # Format Terraform code
+#     - name: Terraform Format
+#       run: terraform fmt
+#       working-directory: network
+      
+#     # Validate the Terraform code 
+#     - name: Terraform Validate
+#       run: terraform validate
+#       working-directory: network
+      
+#     # Apply the Terraform plan
+#     - name: terraform apply
+#       run: terraform apply -var project_name= -var region= -var environment= -var cidr_block= -auto-approve
+#       working-directory: network
+
+name: Apply Terraform
+on:
+  workflow_dispatch:
+    inputs:
+      awsAccountId:
+        description: 'AWS Account ID'
+        required: true
+      roleName:
+        description: 'IAM Role Name'
+        required: true
+
+jobs:
+  apply_network:
+    runs-on: ubuntu-latest
+    # Define the steps for this job
+    steps:
+    
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Make Executable tfenv
+      run: chmod +x ./scripts/dependencies/install-tfenv.sh
+      continue-on-error: false
+      
+    - name: Install tfenv
+      run: ./scripts/dependencies/install-tfenv.sh
+      continue-on-error: false
+
+    - name: Make Executable AWS CLI
+      run: chmod +x ./scripts/dependencies/install-aws-cli.sh
+      continue-on-error: false
+    
+    - name: Install AWS CLI
+      run: ./scripts/dependencies/install-aws-cli.sh
+      continue-on-error: false
+
+    - name: Install Terraform
+      run: |
+        sudo apt-get update && sudo apt-get install -y unzip
+        curl -s https://releases.hashicorp.com/terraform/1.3.5/terraform_1.3.5_linux_amd64.zip -o terraform.zip
+        unzip terraform.zip
+        sudo mv terraform /usr/local/bin/
+    
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: "arn:aws:iam::{{ inputs.awsAccountId }}:role/{{ inputs.roleName }}"
+        aws-region: $(cat network/terraform.tfvars | grep region | awk '{print $3}' | tr -d '"')
+
+    - name: Initialize Terraform
+      run: terraform init
+      working-directory: network
+
+    - name: Apply Terraform Configuration
+      run: terraform apply -auto-approve
+      working-directory: network

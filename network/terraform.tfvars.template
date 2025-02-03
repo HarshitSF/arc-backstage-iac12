@@ -1,0 +1,4 @@
+project_name = "${PROJECT_NAME}"
+region = "${REGION}"
+environment = "${ENVIRONMENT}"
+cidr_block = "${CIDR_BLOCK}"

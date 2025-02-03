@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: arc-platform
+  description: Terraform Infrastructure Repository
+  annotations:
+    github.com/project-slug: github.com?owner=HarshitSF&repo=arc-backstage-iac12
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: service
+  owner: guests
+  lifecycle: experimental
