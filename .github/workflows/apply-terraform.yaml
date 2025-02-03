@@ -145,7 +145,7 @@ jobs:
       uses: aws-actions/configure-aws-credentials@v2
       with:
         role-to-assume: "arn:aws:iam::{{ inputs.awsAccountId }}:role/{{ inputs.roleName }}"
-        aws-region: $(cat network/terraform.tfvars | grep region | awk '{print $3}' | tr -d '"')
+        aws-region: (cat network/terraform.tfvars | grep region | awk '{print $3}' | tr -d '"')
 
     - name: Initialize Terraform
       run: terraform init
